@@ -5,15 +5,11 @@
 
 # vavi-apps-github
 
-how do u remove projects has same version?
+how do u remove projects that has the same version?
 
 <img width="400" src="https://user-images.githubusercontent.com/493908/216862475-440e2b11-680a-457b-9eed-741091387a0d.png">
 
 ## Goal
-
- * to delete series of repository that specified a version.
-
-like
 
 ```java
  github.packageList("jsapi").filter(Packages::versionFilter("6.3.0")).foreach(Packages::delele);
