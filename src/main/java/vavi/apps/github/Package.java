@@ -20,7 +20,7 @@ public class Package {
     String id;
     public String name;
     String package_type;
-//    User owner;
+    User owner;
     int version_count;
     String visibility;
     Date created_at;
