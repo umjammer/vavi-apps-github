@@ -12,6 +12,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
 import org.glassfish.jersey.client.ClientResponse;
 import vavi.util.Debug;
@@ -30,6 +31,9 @@ public class Github {
 
     @Property(name = "github.token")
     private transient String token;
+
+    @Property(name = "github.version")
+    private String version = "2022-11-28";
 
     /** */
     private static Github instance = new Github();
@@ -54,65 +58,59 @@ public class Github {
     /** */
     private WebTarget target;
 
-    /** */
-    private String version = "2022-11-28";
+    /**
+     * TODO how to instantiate MultivaluedMap?
+     * @return the builder filled w/ authorization headers
+     */
+    private Invocation.Builder headersFilledBuilder(Invocation.Builder builder) {
+        return builder.header("Accept", "application/vnd.github+json")
+                .header("Authorization", "Bearer " + token)
+                .header("X-GitHub-Api-Version", version);
+    }
 
-    /** */
+    /** Logins the github. */
     public User login() throws IOException {
-        Client client = ClientBuilder.newClient();
+        Client client = ClientBuilder.newClient(); // DON'T CLOSE
         target = client.target("https://api.github.com/");
 
-        String json = target.path("user").request()
-                .header("Accept", "application/vnd.github+json")
-                .header("Authorization", "Bearer " + token)
-                .header("X-GitHub-Api-Version", version)
+        String json = headersFilledBuilder(target.path("user").request())
                 .get(String.class);
         return gson.fromJson(json, User.class);
     }
 
-    /** */
+    /** Gets a zen. */
     public String getZen() {
-        return target.path("zen").request()
-                .header("Accept", "application/vnd.github+json")
-                .header("Authorization", "Bearer " + token)
-                .header("X-GitHub-Api-Version", version)
+        return headersFilledBuilder(target.path("zen").request())
                 .get(String.class);
     }
 
-    /** */
+    /** Gets a packages. */
     public Package[] getPackages(String packageType) {
-        String json = target.path("user/packages")
+        String json = headersFilledBuilder(target.path("user/packages")
                 .queryParam("package_type", packageType)
-                .request()
-                .header("Accept", "application/vnd.github+json")
-                .header("Authorization", "Bearer " + token)
-                .header("X-GitHub-Api-Version", version)
+                .request())
                 .get(String.class);
 //Debug.println(json);
         return gson.fromJson(json, Package[].class);
     }
 
-    /** */
+    /** Gets a package version. */
     public Version[] getPackageVersions(Package p) {
-        String json = target.path(String.format("user/packages/%s/%s/versions", p.package_type, p.name))
+        String path = String.format("user/packages/%s/%s/versions", p.package_type, p.name);
+        String json = headersFilledBuilder(target.path(path)
                 .queryParam("package_type", p.created_at)
-                .request()
-                .header("Accept", "application/vnd.github+json")
-                .header("Authorization", "Bearer " + token)
-                .header("X-GitHub-Api-Version", version)
+                .request())
                 .get(String.class);
 //Debug.println(json);
         return gson.fromJson(json, Version[].class);
     }
 
-    /** */
+    /** Deletes a package. */
     public void deletePackage(Package p, int versionId) {
-        ClientResponse response = target.path(String.format("user/packages/%s/%s/versions/%s", p.package_type, p.name, versionId))
+        String path = String.format("user/packages/%s/%s/versions/%s", p.package_type, p.name, versionId);
+        ClientResponse response = headersFilledBuilder(target.path(path)
                 .queryParam("package_type", p.created_at)
-                .request()
-                .header("Accept", "application/vnd.github+json")
-                .header("Authorization", "Bearer " + token)
-                .header("X-GitHub-Api-Version", version)
+                .request())
                 .delete(ClientResponse.class);
 Debug.println(response.getStatus());
     }
